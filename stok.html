@@ -313,7 +313,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    fixOffset();
+    
     fetch(APPS_SCRIPT_URL)
       .then(r => r.json())
       .then(data => {
