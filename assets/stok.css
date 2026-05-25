@@ -66,7 +66,7 @@
     padding: 16px 14px; box-shadow: 0 2px 12px rgba(0,0,0,.06); animation: fadeUp .55s both;
   }
   .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .panel-title { font-size: 14px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+  .panel-title { font-size: 14px; font-weight: 700; color: var(--ink); display: flex; align-items: center; gap: 7px;margin-bottom: 0px; }
   .panel-badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; flex-shrink: 0; }
   .badge-ok   { background: var(--orange-lt); color: var(--orange); }
   .badge-warn { background: #FFF4F2; color: #B03A20; }
