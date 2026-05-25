@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Monito – STOK BARANG</title>
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Global Style -->
+<link rel="stylesheet" href="./assets/style.css" />
+<link rel="stylesheet" href="./assets/stok.css" />
+<!-- PWA -->
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Monito.">
+<meta name="theme-color" content="#E8603C">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<!-- CSS khusus halaman ini (opsional) -->
+<style>
+  /* tambahkan CSS spesifik halaman ini di sini */
+</style>
+</head>
+<body>
+
+<!-- Navbar di-inject otomatis oleh navbar.js -->
+
+<!-- KONTEN HALAMAN INI -->
+<div class="search-bar">
+  <div class="search-wrap">
+    <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+    <input type="text" id="search-input" placeholder="Cari nama atau kode produk..." oninput="applyFilter()" />
+  </div>
+  <div class="seg-wrap">
+    <button class="seg-btn active" id="seg-semua" onclick="setFilter('semua')">Semua</button>
+    <button class="seg-btn" id="seg-restock" onclick="setFilter('restock')">⚠️ Restock</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="alert-banner" id="alert-banner" style="display:none">
+    <div class="alert-top">
+      <span class="alert-icon">🔴</span>
+      <span class="alert-title">Perlu Restock Segera</span>
+      <span class="alert-count" id="alert-count"></span>
+    </div>
+    <div class="alert-chips" id="alert-chips"></div>
+  </div>
+
+  <div class="sec-title" id="title-ringkasan">Ringkasan Inventori</div>
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card c-orange">
+      <span class="kpi-emoji">📦</span>
+      <div class="kpi-label">Total Jenis Produk</div>
+      <div class="kpi-value" id="kpi-jenis">—</div>
+      <div class="kpi-sub">SKU terdaftar</div>
+    </div>
+    <div class="kpi-card c-blue">
+      <span class="kpi-emoji">🔢</span>
+      <div class="kpi-label">Total Stok</div>
+      <div class="kpi-value" id="kpi-total">—</div>
+      <div class="kpi-sub">semua kategori</div>
+    </div>
+    <div class="kpi-card c-teal">
+      <span class="kpi-emoji">👜</span>
+      <div class="kpi-label">Stok Totebag</div>
+      <div class="kpi-value" id="kpi-totebag">—</div>
+      <div class="kpi-sub" id="sub-totebag">— jenis</div>
+    </div>
+    <div class="kpi-card c-yellow">
+      <span class="kpi-emoji">👘</span>
+      <div class="kpi-label">Stok Celemek</div>
+      <div class="kpi-value" id="kpi-celemek">—</div>
+      <div class="kpi-sub" id="sub-celemek">— jenis</div>
+    </div>
+    <div class="kpi-card c-green">
+      <span class="kpi-emoji">🧢</span>
+      <div class="kpi-label">Stok Topi</div>
+      <div class="kpi-value" id="kpi-topi">—</div>
+      <div class="kpi-sub" id="sub-topi">— jenis</div>
+    </div>
+    <div class="kpi-card c-red">
+      <span class="kpi-emoji">⚠️</span>
+      <div class="kpi-label">Perlu Restock</div>
+      <div class="kpi-value red" id="kpi-restock">—</div>
+      <div class="kpi-sub">item di bawah min stock</div>
+    </div>
+  </div>
+
+  <div class="sec-title" id="title-daftar">Daftar Stok per Kategori</div>
+  <div class="panels-grid" id="panels-grid"></div>
+
+</div>
+
+<!-- Global Navbar -->
+<script src="./assets/navbar.js"></script>
+
+<!-- Logic halaman ini -->
+<script>
+  // Paste JS dari repo lama kamu di sini
+  // Hapus bagian switchTab(), openMenu(), closeMenu(), toggleDark()
+  // karena sudah ditangani navbar.js
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTcW__jLcDvE6ww3ZsLwbrgniKl-OXIqx-r5di3DemlTr63jdFP8RWmZWhAVYSpgN4/exec';
+
+  const DATA = {
+    categories: [
+      {
+        key: 'totebag-premium', label: 'Totebag Premium', emoji: '👜', dot: '#E8603C', group: 'totebag',
+        items: [
+          { code:'P001', name:'Premium - Putih Gading',             min:10, stock:29  },
+          { code:'P002', name:'Premium - Putih Gading - Resleting', min:10, stock:170 },
+          { code:'P003', name:'Premium - Hitam',                    min:10, stock:62  },
+          { code:'P004', name:'Premium - Hitam - Resleting',        min:10, stock:0   },
+          { code:'B001', name:'Blacu',                              min:10, stock:62  },
+        ]
+      },
+      {
+        key: 'totebag-eco', label: 'Totebag Eco', emoji: '🌿', dot: '#27AE60', group: 'totebag',
+        items: [
+          { code:'E001', name:'Eco - Putih Gading',             min:12, stock:102 },
+          { code:'E002', name:'Eco - Putih Gading - Resleting', min:5,  stock:60  },
+          { code:'E003', name:'Eco - Hitam',                    min:5,  stock:-1  },
+          { code:'E004', name:'Eco - Hitam - Resleting',        min:5,  stock:35  },
+        ]
+      },
+      {
+        key: 'celemek', label: 'Apron', emoji: '👘', dot: '#5B8DEF', group: 'celemek',
+        items: [
+          { code:'C001', name:'Apron - Hitam',      min:20, stock:12 },
+          { code:'C002', name:'Apron - Merah',      min:10, stock:0  },
+          { code:'C003', name:'Apron - Coklat Tua', min:10, stock:7  },
+          { code:'C004', name:'Apron - Maroon',     min:10, stock:15 },
+          { code:'C005', name:'Apron - Navy',       min:10, stock:0  },
+          { code:'C006', name:'Apron - Kuning',     min:10, stock:13 },
+          { code:'C007', name:'Apron - Biru',       min:10, stock:3  },
+          { code:'C008', name:'Apron - Orange',     min:10, stock:5  },
+          { code:'C009', name:'Apron - Hijau',      min:10, stock:28 },
+          { code:'C010', name:'Apron - Hijau Tua',  min:10, stock:19 },
+          { code:'C011', name:'Apron - Pink',       min:10, stock:8  },
+          { code:'C012', name:'Apron - Krem',       min:10, stock:21 },
+          { code:'C013', name:'Apron - Soft Pink',  min:10, stock:12 },
+          { code:'C014', name:'Apron - Putih',      min:10, stock:30 },
+        ]
+      },
+      {
+        key: 'celemek-anak', label: 'Apron Anak', emoji: '🧒', dot: '#F5A623', group: 'celemek',
+        items: [
+          { code:'CA001', name:'Apron Anak - Hitam',  min:5, stock:0  },
+          { code:'CA002', name:'Apron Anak - Merah',  min:5, stock:12 },
+          { code:'CA003', name:'Apron Anak - Hijau',  min:5, stock:0  },
+          { code:'CA004', name:'Apron Anak - Orange', min:5, stock:2  },
+          { code:'CA005', name:'Apron Anak - Kuning', min:5, stock:4  },
+          { code:'CA006', name:'Apron Anak - Maroon', min:5, stock:11 },
+        ]
+      },
+      {
+        key: 'topi-premium', label: 'Topi Premium', emoji: '👑', dot: '#E8A020', group: 'topi',
+        items: [
+          { code:'PR001', name:'Topi Premium - Hitam',  min:5, stock:36 },
+          { code:'PR002', name:'Topi Premium - Merah',  min:5, stock:25 },
+          { code:'PR003', name:'Topi Premium - Benhur', min:5, stock:1  },
+          { code:'PR004', name:'Topi Premium - Hijau',  min:5, stock:5  },
+          { code:'PR005', name:'Topi Premium - Maroon', min:5, stock:6  },
+          { code:'PR006', name:'Topi Premium - Cream',  min:5, stock:6  },
+          { code:'PR007', name:'Topi Premium - Kuning', min:5, stock:5  },
+        ]
+      },
+      {
+        key: 'topi-jamur', label: 'Topi Jamur', emoji: '🧢', dot: '#2BC4B4', group: 'topi',
+        items: [
+          { code:'JA001', name:'Topi Jamur - Hitam',   min:2, stock:4  },
+          { code:'JA002', name:'Topi Jamur - Putih',   min:2, stock:20 },
+          { code:'JA003', name:'Topi Jamur - Merah',   min:2, stock:2  },
+          { code:'JA004', name:'Topi Jamur - Cokelat', min:2, stock:16 },
+          { code:'JA005', name:'Topi Jamur - Maroon',  min:2, stock:26 },
+          { code:'JA006', name:'Topi Jamur - Krem',    min:2, stock:18 },
+          { code:'JA007', name:'Topi Jamur - Orange',  min:2, stock:13 },
+          { code:'JA008', name:'Topi Jamur - Navy',    min:2, stock:2  },
+          { code:'JA009', name:'Topi Jamur - Pink',    min:2, stock:12 },
+          { code:'JA010', name:'Topi Jamur - Benhur',  min:2, stock:7  },
+        ]
+      },
+      {
+        key: 'topi-jaring', label: 'Topi Jaring', emoji: '🎩', dot: '#9B59B6', group: 'topi',
+        items: [
+          { code:'JR001', name:'Topi Jaring - Hitam',     min:5, stock:19 },
+          { code:'JR002', name:'Topi Jaring - Orange',    min:5, stock:38 },
+          { code:'JR003', name:'Topi Jaring - Kuning',    min:5, stock:25 },
+          { code:'JR004', name:'Topi Jaring - Coklat',    min:5, stock:20 },
+          { code:'JR005', name:'Topi Jaring - Maroon',    min:5, stock:35 },
+          { code:'JR006', name:'Topi Jaring - Merah',     min:5, stock:6  },
+          { code:'JR007', name:'Topi Jaring - Pink',      min:5, stock:8  },
+          { code:'JR008', name:'Topi Jaring - Hijau',     min:5, stock:10 },
+          { code:'JR009', name:'Topi Jaring - Benhur',    min:5, stock:16 },
+          { code:'JR010', name:'Topi Jaring - Hijau Tua', min:5, stock:5  },
+          { code:'JR011', name:'Topi Jaring - Navy',      min:5, stock:12 },
+          { code:'JR012', name:'Topi Jaring - Biru Muda', min:5, stock:5  },
+          { code:'JR013', name:'Topi Jaring - Ungu',      min:5, stock:2  },
+          { code:'JR014', name:'Topi Jaring - Cream',     min:5, stock:5  },
+          { code:'JR015', name:'Topi Jaring - Putih',     min:5, stock:9  },
+        ]
+      },
+    ]
+  };
+
+  let activeFilter = 'semua';
+  let restockCount = 0;
+
+  function setFilter(f) {
+    activeFilter = f;
+    document.getElementById('seg-semua').classList.toggle('active', f === 'semua');
+    document.getElementById('seg-restock').classList.toggle('active', f === 'restock');
+    applyFilter();
+  }
+
+  function normalize(s) { return s.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+  function applyFilter() {
+    const q = normalize(document.getElementById('search-input').value);
+    const isSearching = q.length > 0;
+
+    document.getElementById('alert-banner').style.display  = isSearching ? 'none' : (restockCount > 0 ? '' : 'none');
+    document.getElementById('kpi-grid').style.display      = isSearching ? 'none' : '';
+    document.getElementById('title-ringkasan').style.display = isSearching ? 'none' : '';
+
+    document.querySelectorAll('.stock-item').forEach(el => {
+      const matchSearch = !q || normalize(el.dataset.name).includes(q);
+      const matchFilter = activeFilter === 'semua' || (activeFilter === 'restock' && el.dataset.restock === '1');
+      el.classList.toggle('hidden', !(matchSearch && matchFilter));
+    });
+    document.querySelectorAll('.panel[data-panel]').forEach(panel => {
+      panel.style.display = panel.querySelectorAll('.stock-item:not(.hidden)').length ? '' : 'none';
+    });
+  }
+
+  function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+  function renderDashboard(data) {
+    let totalJenis = 0, totalStok = 0;
+    let stokTotebag = 0, jenisTotebag = 0;
+    let stokCelemek = 0, jenisCelemek = 0;
+    let stokTopi = 0, jenisTopi = 0;
+    const restockItems = [];
+
+    data.categories.forEach(cat => {
+      cat.items.forEach(item => {
+        totalJenis++;
+        const s = Math.max(0, item.stock);
+        totalStok += s;
+        if (item.stock < item.min) restockItems.push({ ...item, dot: cat.dot });
+        if (cat.group === 'totebag') { stokTotebag += s; jenisTotebag++; }
+        if (cat.group === 'celemek') { stokCelemek += s; jenisCelemek++; }
+        if (cat.group === 'topi')    { stokTopi += s;    jenisTopi++;    }
+      });
+    });
+
+    document.getElementById('kpi-jenis').textContent   = fmt(totalJenis);
+    document.getElementById('kpi-total').textContent   = fmt(totalStok);
+    document.getElementById('kpi-totebag').textContent = fmt(stokTotebag);
+    document.getElementById('kpi-celemek').textContent = fmt(stokCelemek);
+    document.getElementById('kpi-topi').textContent    = fmt(stokTopi);
+    restockCount = restockItems.length;
+    document.getElementById('kpi-restock').textContent = restockCount;
+    document.getElementById('sub-totebag').textContent = jenisTotebag + ' jenis';
+    document.getElementById('sub-celemek').textContent = jenisCelemek + ' jenis';
+    document.getElementById('sub-topi').textContent    = jenisTopi + ' jenis';
+
+    if (restockItems.length > 0) {
+      document.getElementById('alert-banner').style.display = '';
+      document.getElementById('alert-count').textContent = restockItems.length + ' item';
+      document.getElementById('alert-chips').innerHTML = restockItems.map(r =>
+        `<span class="alert-chip">
+          <span class="chip-dot" style="background:${r.dot}"></span>
+          ${r.name} <strong>(${r.stock})</strong>
+        </span>`
+      ).join('');
+    }
+
+    document.getElementById('panels-grid').innerHTML = data.categories
+      .filter(cat => cat.items.length > 0)
+      .map(cat => {
+        const warnCount = cat.items.filter(i => i.stock < i.min).length;
+        const rows = cat.items.map(item => {
+          const needsRestock = item.stock < item.min;
+          return `<div class="stock-item"
+                       data-name="${normalize(item.name + ' ' + item.code)}"
+                       data-restock="${needsRestock ? '1' : '0'}">
+            <div class="stock-left">
+              <div class="stock-name">${item.name}</div>
+              <div class="stock-code">${item.code} · min ${item.min}</div>
+            </div>
+            <div class="stock-right">
+              <div class="stock-num">${item.stock}</div>
+            </div>
+          </div>`;
+        }).join('');
+
+        return `<div class="panel" data-panel="${cat.key}">
+          <div class="panel-header">
+            <div class="panel-title">${cat.emoji} ${cat.label}</div>
+            ${warnCount > 0
+              ? `<span class="panel-badge badge-warn">⚠️ ${warnCount} restock</span>`
+              : `<span class="panel-badge badge-ok">${cat.items.length} item</span>`}
+          </div>
+          ${rows}
+        </div>`;
+    }).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fixOffset();
+    fetch(APPS_SCRIPT_URL)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) throw new Error(data.error);
+        renderDashboard(data);
+      })
+      .catch(() => {
+        renderDashboard(DATA);
+      });
+  });
+</script>
+
+</body>
+</html>
