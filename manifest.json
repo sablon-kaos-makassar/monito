@@ -2,7 +2,7 @@
   "name": "Monito.",
   "short_name": "Monito",
   "description": "Monitor usaha Monito",
-  "start_url": "/",
+  "start_url": "/monito/index.html",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#E8603C",
