@@ -91,7 +91,10 @@
     populateYears();
     setDefaultFilter();
     loadData();
-    
+    // Scroll tab aktif ke tengah layar
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab) activeTab.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
     
   function populateYears() {
     const sel = document.getElementById('sel-tahun');
