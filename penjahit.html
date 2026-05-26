@@ -180,6 +180,7 @@
       <div class="sec-title">Sedang Dijahit · ${(d.onProses || []).length} item</div>
       <div class="antrian-wrap">
       ${(d.onProses && d.onProses.length > 0) ? `
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table class="antrian-table">
         <thead>
         <tr>
@@ -200,7 +201,7 @@
          <td>${fmt(item.jumlah)}</td>
          </tr>`).join('')}
         </tbody>
-        </table>` : `<div class="antrian-empty">🪡 Tidak ada jahitan yang sedang diproses</div>`}
+        </table></div>` : `<div class="antrian-empty">🪡 Tidak ada jahitan yang sedang diproses</div>`}
         </div>
 
         ${(d.penjahitTerbaik || d.penjahitTercepat) ? `
