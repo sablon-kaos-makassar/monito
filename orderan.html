@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Monito – [NAMA HALAMAN]</title>
+<title>Monito – ORDERAN</title>
 
 <!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -62,16 +62,8 @@
     populateYears();
     setDefaultFilter();
     loadData();
-    // Scroll tab aktif ke tengah layar
-    const activeTab = document.querySelector('.tab-btn.active');
-    if (activeTab) activeTab.scrollIntoView({ inline: 'center', block: 'nearest' });
-  });
-  window.addEventListener('resize', fixHeaderOffset);
-
-  function fixHeaderOffset() {
-    const h = document.querySelector('.sticky-header').offsetHeight;
-    document.body.style.paddingTop = h + 'px';
-  }
+    
+    
   function populateYears() {
     const sel = document.getElementById('sel-tahun');
     for (let y = 2030; y >= 2026; y--) {
