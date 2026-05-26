@@ -78,6 +78,13 @@
     "Juli","Agustus","September","Oktober","November","Desember"];
 
   let activeUsaha = 'proneto';
+  // ── TOGGLE USAHA ──
+  function switchUsaha(usaha) {
+    if (usaha === 'clothivo') return; // coming soon
+    activeUsaha = usaha;
+    document.getElementById('btn-proneto').classList.toggle('active', usaha === 'proneto');
+    loadData();
+  }
 
   // ── INIT ──
   document.addEventListener('DOMContentLoaded', () => {
