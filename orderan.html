@@ -10,6 +10,7 @@
 
 <!-- Global Style -->
 <link rel="stylesheet" href="./assets/style.css" />
+<link rel="stylesheet" href="./assets/orderan.css" />
 
 <!-- PWA -->
 <link rel="manifest" href="./manifest.json">
@@ -48,6 +49,212 @@
   // Paste JS dari repo lama kamu di sini
   // Hapus bagian switchTab(), openMenu(), closeMenu(), toggleDark()
   // karena sudah ditangani navbar.js
+  // ── GANTI URL INI SETELAH DEPLOY APPS SCRIPT ──
+  const PRONETO_URL = "https://script.google.com/macros/s/AKfycbxL4zAlzu3rikATXao7fePEc8vYQxeYUi_AsK7Tz1u9y4g6pmkLgi0CBaYuqHtgyjFSCw/exec";
+  // Clothivo menyusul — isi nanti
+  const CLOTHIVO_URL = "";
+
+  const BULAN_NAMES = ["","Januari","Februari","Maret","April","Mei","Juni",
+    "Juli","Agustus","September","Oktober","November","Desember"];
+
+  let activeUsaha = 'proneto';
+
+  // ── INIT ──
+  document.addEventListener('DOMContentLoaded', () => {
+    populateYears();
+    setDefaultFilter();
+    loadData();
+    // Scroll tab aktif ke tengah layar
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab) activeTab.scrollIntoView({ inline: 'center', block: 'nearest' });
+  });
+  window.addEventListener('resize', fixHeaderOffset);
+
+  function fixHeaderOffset() {
+    const h = document.querySelector('.sticky-header').offsetHeight;
+    document.body.style.paddingTop = h + 'px';
+  }
+  function populateYears() {
+    const sel = document.getElementById('sel-tahun');
+    for (let y = 2030; y >= 2026; y--) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y; sel.appendChild(o);
+    }
+  }
+  function setDefaultFilter() {
+    const now = new Date();
+    document.getElementById('sel-bulan').value = now.getMonth() + 1;
+    document.getElementById('sel-tahun').value = now.getFullYear();
+  }
+
+  // ── LOAD DATA ──
+  async function loadData() {
+    showLoading(true);
+    const bulan = document.getElementById('sel-bulan').value || 0;
+    const tahun = document.getElementById('sel-tahun').value;
+    const url   = activeUsaha === 'proneto' ? PRONETO_URL : CLOTHIVO_URL;
+
+    if (!url) { showError('URL Apps Script belum diisi.'); return; }
+
+    try {
+      const res = await fetch(`${url}?page=produksi&bulan=${bulan}&tahun=${tahun}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      renderDashboard(data);
+    } catch (err) { showError(err.message); }
+  }
+
+  function showLoading(on) {
+    document.getElementById('loading-state').style.display  = on ? 'block' : 'none';
+    document.getElementById('dashboard-content').style.display = on ? 'none' : 'block';
+  }
+  function showError(msg) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('dashboard-content').style.display = 'block';
+    document.getElementById('dashboard-content').innerHTML =
+      `<div class="error-msg">⚠️ Gagal memuat data: ${msg}<br>
+       <small style="margin-top:6px;display:block;">Pastikan URL Apps Script sudah benar dan sudah di-deploy sebagai Web App.</small></div>`;
+  }
+
+  // ── RENDER ──
+  function renderDashboard(d) {
+    const { bulan, tahun } = d.filter;
+    const bulanLabel  = bulan ? BULAN_NAMES[bulan] : 'Semua Bulan';
+    const periodeLabel= `${bulanLabel} ${tahun}`.trim();
+    const usahaLabel  = activeUsaha === 'proneto' ? '🧵 Proneto' : '👕 Clothivo';
+
+    const maxKat = d.kategori[0]?.qty || 1;
+
+    // Pill status
+    function pillStatus(s) {
+      const lower = s.toLowerCase();
+      if (lower === 'lunas') return `<span class="pill pill-lunas">Lunas</span>`;
+      if (lower === 'dp')    return `<span class="pill pill-dp">DP</span>`;
+      return `<span class="pill pill-other">${s || '—'}</span>`;
+    }
+
+    // Badge deadline
+    function deadlineBadge(hari) {
+      const cls = hari === 0 ? 'badge-urgent' : hari <= 2 ? 'badge-soon' : 'badge-ok';
+      const txt = hari === 0 ? 'Hari<br>ini' : `${hari}<br>hari`;
+      return `<div class="deadline-badge ${cls}">${txt}</div>`;
+    }
+
+    const html = `
+      <div class="sec-title">${usahaLabel} · ${periodeLabel}</div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card c-orange">
+          <span class="kpi-emoji">📦</span>
+          <div class="kpi-label">Total Produk</div>
+          <div class="kpi-value">${fmt(d.totalQty)}</div>
+          <div class="kpi-sub">unit dipesan</div>
+        </div>
+        <div class="kpi-card c-blue">
+          <span class="kpi-emoji">🧾</span>
+          <div class="kpi-label">Invoice</div>
+          <div class="kpi-value">${fmt(d.totalInvoice)}</div>
+          <div class="kpi-sub">${fmt(d.totalCustomer)} customer</div>
+        </div>
+        <div class="kpi-card c-green">
+          <span class="kpi-emoji">💰</span>
+          <div class="kpi-label">Total Penjualan (Rp)</div>
+          <div class="kpi-value" style="font-size:clamp(16px,4.5vw,26px);">${fmt(d.totalPenjualan)}</div>
+          <div class="kpi-sub">periode ini</div>
+        </div>
+        <div class="kpi-card c-red">
+          <span class="kpi-emoji">⏳</span>
+          <div class="kpi-label">Belum Lunas</div>
+          <div class="kpi-value">${fmt(d.jumlahBelumLunas)}</div>
+          <div class="kpi-sub">invoice · sisa ${fmtRp(d.totalOutstanding)}</div>
+        </div>
+        ${d.produkTerlaku ? `
+        <div class="kpi-card c-teal">
+          <span class="kpi-emoji">🏆</span>
+          <div class="kpi-label">Produk Terlaku</div>
+          <div class="kpi-value" style="font-size:clamp(16px,4vw,22px);line-height:1.2;">${d.produkTerlaku.nama}</div>
+          <div class="kpi-sub">${fmt(d.produkTerlaku.qty)} unit</div>
+        </div>` : ''}
+        ${d.produkTersepi && d.kategori.length > 1 ? `
+        <div class="kpi-card c-yellow">
+          <span class="kpi-emoji">🔻</span>
+          <div class="kpi-label">Produk Tersepi</div>
+          <div class="kpi-value" style="font-size:clamp(16px,4vw,22px);line-height:1.2;">${d.produkTersepi.nama}</div>
+          <div class="kpi-sub">${fmt(d.produkTersepi.qty)} unit</div>
+        </div>` : ''}
+      </div>
+
+      <!-- Kategori -->
+      <div class="panel">
+          <div class="panel-title">📊 Per Kategori Produk</div>
+          ${d.kategori.length ? d.kategori.map((k, i) => `
+            <div class="kat-item">
+              <div class="kat-header">
+                <span class="kat-name">${k.nama}</span>
+                <span class="kat-num">${fmt(k.qty)}</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill bar-c${i % 6}" style="width:${Math.round((k.qty/maxKat)*100)}%"></div>
+              </div>
+            </div>`).join('') : '<div style="color:var(--ink3);font-size:13px;">Tidak ada data.</div>'}
+        </div>
+
+      <!-- Order Terbaru -->
+      <div class="panel">
+        <div class="panel-title">🕐 Order Terbaru</div>
+        <div class="table-scroll-hint">← geser untuk lihat semua →</div>
+        <div class="table-scroll-wrap">
+          <table class="order-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Produk</th>
+                <th>Qty</th>
+                <th>Total</th>
+                <th>Tgl</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${d.orderTerbaru.length ? d.orderTerbaru.map(o => `
+              <tr>
+                <td style="font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.nama}</td>
+                <td style="text-align:left !important;font-family:inherit;">${o.produk}<br><span style="color:var(--ink3);font-size:10px;">${o.warna}</span></td>
+                <td>${fmt(o.qty)}</td>
+                <td>${fmtRp(o.total)}</td>
+                <td>${o.tanggal}</td>
+                <td>${pillStatus(o.status)}</td>
+              </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--ink3);padding:20px;">Tidak ada data.</td></tr>`}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('dashboard-content').innerHTML = html;
+    showLoading(false);
+
+    // Animasi bar
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(el => {
+        const w = el.style.width; el.style.width = '0';
+        requestAnimationFrame(() => { el.style.width = w; });
+      });
+    }, 50);
+  }
+
+  function fmt(n)    { return Number(n||0).toLocaleString('id-ID'); }
+  // BARU
+  function fmtRp(n) {
+    return 'Rp' + Number(n||0).toLocaleString('id-ID');
+  }
+  // function fmtRp(n)  {
+  //   const num = Number(n||0);
+  //   if (num >= 1_000_000) return 'Rp' + (num/1_000_000).toFixed(1).replace('.',',') + 'jt';
+  //   return 'Rp' + num.toLocaleString('id-ID');
+  // }
 </script>
 
 </body>
