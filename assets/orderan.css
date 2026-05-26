@@ -1,7 +1,7 @@
  /* ── FILTER + USAHA BAR ── */
   .filter-bar {
     background: #fff; border-bottom: 1px solid var(--border);
-    padding: 10px 16px; display: flex; flex-direction: column; gap: 8px;
+    padding: 10px 16px; display: flex; flex-direction: column; gap: 8px;align-items: stretch;
   }
 
   /* Toggle usaha */
